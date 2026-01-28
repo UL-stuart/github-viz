@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>GitHub-style Sessions Heatmap</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; }
+      #drop { border: 2px dashed #ccc; padding: 24px; border-radius: 12px; }
+
+      /* Heatmap wrapper with y-axis labels + calendar column */
+      #heatmapWrap { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; }
+
+      /* Weekday labels column (7 rows) */
+      #yLabels {
+        display: grid;
+        grid-template-rows: repeat(7, 14px);
+        grid-auto-rows: 14px;
+        gap: 3px;
+        font-size: 12px;
+        color: #666;
+        padding-top: 18px; /* aligns with grid under month labels */
+      }
+      #yLabels div { line-height: 14px; height: 14px; }
+
+      /* Calendar column: month labels row + grid */
+      #calendarCol { display: flex; flex-direction: column; }
+
+      /* Month labels strip */
+      #monthLabels {
+        position: relative;
+        height: 16px;
+        margin-bottom: 2px;
+        font-size: 12px;
+        color: #666;
+        user-select: none;
+        pointer-events: none; /* don't interfere with hover */
+      }
+      .monthLabel {
+        position: absolute;
+        top: 0;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      /* GitHub-style calendar grid: 7 rows, flow by column (weeks) */
+      #grid {
+        display: grid;
+        grid-template-rows: repeat(7, 14px);
+        grid-auto-flow: column;
+        grid-auto-columns: 14px;
+        grid-auto-rows: 14px;
+        gap: 3px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .cell { width: 14px; height: 14px; border-radius: 3px; background: #ebedf0; }
+
+      .legend { display:flex; align-items:center; gap:8px; margin-top: 10px; }
+
+      /* Custom tooltip (multiline) */
+      #tooltip {
+        position: fixed;
+        padding: 8px 10px;
+        font-size: 12px;
+        color: #fff;
+        background: rgba(0,0,0,0.88);
+        border-radius: 8px;
+        pointer-events: none;
+        display: none;
+        z-index: 9999;
+        white-space: pre-line;      /* preserve \n line breaks */
+        max-width: 360px;           /* wrap long names */
+        line-height: 1.25;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Sessions heatmap (last 365 days)</h2>
+    <div id="drop">Drop a CSV here (must include: session_start, player, id, name)</div>
+
+    <div style="margin-top:12px;">
+      <label>View: </label>
+      <select id="playerSelect"></select>
+      <span id="windowLabel" style="margin-left:12px; color:#555;"></span>
+    </div>
+
+    <div class="legend">
+      <span>Less</span>
+      <div class="cell" style="background:#ebedf0"></div>
+      <div class="cell" style="background:#c6e48b"></div>
+      <div class="cell" style="background:#7bc96f"></div>
+      <div class="cell" style="background:#239a3b"></div>
+      <div class="cell" style="background:#196127"></div>
+      <span>More</span>
+    </div>
+
+    <div id="heatmapWrap">
+      <div id="yLabels"></div>
+
+      <div id="calendarCol">
+        <div id="monthLabels"></div>
+        <div id="grid"></div>
+      </div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
