@@ -33,7 +33,7 @@
         font-size: 12px;
         color: #666;
         user-select: none;
-        pointer-events: none; /* don't interfere with hover */
+        pointer-events: none;
       }
       .monthLabel {
         position: absolute;
@@ -42,7 +42,7 @@
         pointer-events: none;
       }
 
-      /* GitHub-style calendar grid: 7 rows, flow by column (weeks) */
+      /* GitHub-style calendar grid */
       #grid {
         display: grid;
         grid-template-rows: repeat(7, 14px);
@@ -69,10 +69,39 @@
         pointer-events: none;
         display: none;
         z-index: 9999;
-        white-space: pre-line;      /* preserve \n line breaks */
-        max-width: 360px;           /* wrap long names */
+        white-space: pre-line;
+        max-width: 360px;
         line-height: 1.25;
         box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      }
+
+      /* Area chart section */
+      #chartWrap {
+        margin-top: 18px;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+      }
+
+      #chartTitle {
+        font-size: 13px;
+        color: #444;
+        margin-bottom: 8px;
+      }
+
+      #areaChart {
+        width: 100%;
+        max-width: 980px;
+      }
+
+      .axisText {
+        font-size: 11px;
+        fill: #666;
+      }
+
+      .gridLine {
+        stroke: #eee;
+        stroke-width: 1;
+        shape-rendering: crispEdges;
       }
     </style>
   </head>
@@ -103,6 +132,11 @@
         <div id="monthLabels"></div>
         <div id="grid"></div>
       </div>
+    </div>
+
+    <div id="chartWrap">
+      <div id="chartTitle">Sessions per month</div>
+      <svg id="areaChart" viewBox="0 0 980 220" preserveAspectRatio="xMinYMin meet"></svg>
     </div>
 
     <div id="tooltip"></div>

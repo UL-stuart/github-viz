@@ -5,6 +5,8 @@ const monthLabels = document.getElementById("monthLabels");
 const playerSelect = document.getElementById("playerSelect");
 const windowLabel = document.getElementById("windowLabel");
 const tooltip = document.getElementById("tooltip");
+const chartSvg = document.getElementById("areaChart");
+const chartTitle = document.getElementById("chartTitle");
 
 const COLORS = ["#ebedf0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"]; // 0..4+
 const CAP = 4;
@@ -74,6 +76,12 @@ function dayKey(dateUTC) {
   return `${y}-${m}-${d}`;
 }
 
+function monthKey(dateUTC) {
+  const y = dateUTC.getUTCFullYear();
+  const m = String(dateUTC.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
 function sundayOnOrBefore(dateUTC) {
   const dow = dateUTC.getUTCDay(); // Sun=0..Sat=6
   const out = new Date(dateUTC);
@@ -87,13 +95,21 @@ function addDays(dateUTC, n) {
   return out;
 }
 
+function formatMonthLabel(ym) {
+  // ym = "YYYY-MM"
+  const [y, m] = ym.split("-").map(x => parseInt(x, 10));
+  const d = new Date(Date.UTC(y, m - 1, 1));
+  return d.toLocaleString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+}
+
 /**
  * Build:
  * - counts: dateKey -> session count
  * - details: dateKey -> array of { player, name }
+ * - monthly: monthKey -> session count
  * respecting rolling window + player filter
  */
-function buildCountsAndDetails(rows, playerValue) {
+function buildCountsDetailsMonthly(rows, playerValue) {
   let maxDate = null;
   const parsed = [];
 
@@ -103,44 +119,56 @@ function buildCountsAndDetails(rows, playerValue) {
 
     const dateUTC = toDateOnlyUTC(d);
     const player = (r.player ?? "").toString();
-    const sessionName = (r.name ?? "").toString(); // session "name" column
+    const sessionName = (r.name ?? "").toString();
 
     parsed.push({ dateUTC, player, sessionName });
 
     if (!maxDate || dateUTC > maxDate) maxDate = dateUTC;
   }
 
-  if (!maxDate) return { counts: new Map(), details: new Map(), start: null, end: null };
+  if (!maxDate) return { counts: new Map(), details: new Map(), monthly: [], start: null, end: null };
 
   const end = maxDate;
   const start = addDays(end, -364);
 
-  const counts = new Map();  // dateKey -> number
-  const details = new Map(); // dateKey -> [{player,name},...]
+  const counts = new Map();
+  const details = new Map();
+  const monthlyMap = new Map(); // "YYYY-MM" -> count
 
   for (const item of parsed) {
     if (item.dateUTC < start || item.dateUTC > end) continue;
     if (playerValue !== "ALL" && item.player !== playerValue) continue;
 
-    const k = dayKey(item.dateUTC);
+    const dk = dayKey(item.dateUTC);
+    counts.set(dk, (counts.get(dk) || 0) + 1);
 
-    counts.set(k, (counts.get(k) || 0) + 1);
-
-    if (!details.has(k)) details.set(k, []);
-    details.get(k).push({
+    if (!details.has(dk)) details.set(dk, []);
+    details.get(dk).push({
       player: item.player || "(unknown player)",
       name: item.sessionName || "(unnamed session)",
     });
+
+    const mk = monthKey(item.dateUTC);
+    monthlyMap.set(mk, (monthlyMap.get(mk) || 0) + 1);
   }
 
-  return { counts, details, start, end };
+  // Build a continuous monthly series across the window (including months with 0)
+  const months = [];
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  const endCursor = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+
+  for (let d = new Date(cursor); d <= endCursor; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
+    const mk = monthKey(d);
+    months.push({ month: mk, count: monthlyMap.get(mk) || 0 });
+  }
+
+  return { counts, details, monthly: months, start, end };
 }
 
 function renderYLabels() {
   if (!yLabels) return;
   yLabels.innerHTML = "";
 
-  // Rows are Sun..Sat (weeks start Sunday)
   const labelsByRow = ["", "Mon", "", "Wed", "", "Fri", ""];
   for (const t of labelsByRow) {
     const div = document.createElement("div");
@@ -152,7 +180,6 @@ function renderYLabels() {
 function renderMonthLabels(start, end, firstSunday, nWeeks) {
   if (!monthLabels) return;
   monthLabels.innerHTML = "";
-
   monthLabels.style.width = `${nWeeks * PITCH - GAP}px`;
 
   let cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
@@ -192,7 +219,6 @@ function showTooltip(text, x, y) {
   tooltip.textContent = text;
   tooltip.style.display = "block";
 
-  // keep tooltip on screen if near edges
   const pad = 12;
   const maxX = window.innerWidth - 20;
   const maxY = window.innerHeight - 20;
@@ -205,7 +231,6 @@ function formatTooltip(dateKeyStr, items) {
   const n = items.length;
   const header = `${n} session${n === 1 ? "" : "s"} on ${dateKeyStr}`;
 
-  // Sort: player then session name (optional, but reads nicely)
   const sorted = items.slice().sort((a, b) => {
     const p = a.player.localeCompare(b.player);
     if (p !== 0) return p;
@@ -213,7 +238,6 @@ function formatTooltip(dateKeyStr, items) {
   });
 
   const lines = sorted.slice(0, TOOLTIP_MAX_LINES).map(x => `• ${x.player} — ${x.name}`);
-
   if (sorted.length > TOOLTIP_MAX_LINES) {
     lines.push(`… +${sorted.length - TOOLTIP_MAX_LINES} more`);
   }
@@ -227,7 +251,6 @@ function renderGrid(counts, details, start, end) {
 
   const firstSunday = sundayOnOrBefore(start);
 
-  // Pad end to Saturday so final week is complete
   const last = new Date(end);
   last.setUTCDate(last.getUTCDate() + (6 - last.getUTCDay()));
 
@@ -250,7 +273,6 @@ function renderGrid(counts, details, start, end) {
       const bucket = Math.min(c, CAP);
       cell.style.background = COLORS[bucket];
 
-      // Tooltip only when sessions happened
       if (c > 0) {
         const items = details.get(k) || [];
         cell.dataset.tooltip = formatTooltip(k, items);
@@ -271,21 +293,126 @@ function renderGrid(counts, details, start, end) {
 // Tooltip handlers (event delegation)
 grid.addEventListener("mousemove", (e) => {
   const cell = e.target.closest(".cell");
-  if (!cell) {
-    hideTooltip();
-    return;
-  }
+  if (!cell) { hideTooltip(); return; }
 
   const text = cell.dataset.tooltip;
-  if (!text) {
-    hideTooltip();
-    return;
-  }
+  if (!text) { hideTooltip(); return; }
 
   showTooltip(text, e.clientX, e.clientY);
 });
 
 grid.addEventListener("mouseleave", hideTooltip);
+
+/* ---------------------------
+   SVG Area Chart (monthly)
+----------------------------*/
+
+function clearSvg(svg) {
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+}
+
+function svgEl(tag, attrs = {}) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function renderAreaChart(monthly, playerValue) {
+  if (!chartSvg) return;
+
+  clearSvg(chartSvg);
+
+  const W = 980, H = 220;
+  const margin = { top: 16, right: 16, bottom: 32, left: 44 };
+  const iw = W - margin.left - margin.right;
+  const ih = H - margin.top - margin.bottom;
+
+  // Title tweak
+  if (chartTitle) {
+    chartTitle.textContent = playerValue === "ALL"
+      ? "Sessions per month (All players)"
+      : `Sessions per month (${playerValue})`;
+  }
+
+  if (!monthly || monthly.length === 0) {
+    chartSvg.appendChild(svgEl("text", { x: 10, y: 20, class: "axisText" }))
+      .textContent = "No data in window.";
+    return;
+  }
+
+  const maxY = Math.max(...monthly.map(d => d.count), 1);
+
+  const x = (i) => margin.left + (monthly.length === 1 ? 0 : (i * iw) / (monthly.length - 1));
+  const y = (v) => margin.top + ih - (v * ih) / maxY;
+
+  // Background grid lines (3)
+  const gridLines = 3;
+  for (let i = 0; i <= gridLines; i++) {
+    const val = (maxY * i) / gridLines;
+    const yy = y(val);
+    chartSvg.appendChild(svgEl("line", { x1: margin.left, y1: yy, x2: margin.left + iw, y2: yy, class: "gridLine" }));
+    const t = svgEl("text", { x: margin.left - 8, y: yy + 4, "text-anchor": "end", class: "axisText" });
+    t.textContent = Math.round(val).toString();
+    chartSvg.appendChild(t);
+  }
+
+  // Build area path
+  let dArea = "";
+  let dLine = "";
+
+  for (let i = 0; i < monthly.length; i++) {
+    const px = x(i);
+    const py = y(monthly[i].count);
+    dLine += (i === 0 ? `M ${px} ${py}` : ` L ${px} ${py}`);
+  }
+
+  const x0 = x(0);
+  const xN = x(monthly.length - 1);
+  const yBase = margin.top + ih;
+
+  dArea = `${dLine} L ${xN} ${yBase} L ${x0} ${yBase} Z`;
+
+  // Area fill
+  chartSvg.appendChild(svgEl("path", {
+    d: dArea,
+    fill: "rgba(35, 154, 59, 0.20)",
+    stroke: "none"
+  }));
+
+  // Line stroke
+  chartSvg.appendChild(svgEl("path", {
+    d: dLine,
+    fill: "none",
+    stroke: "rgba(35, 154, 59, 0.95)",
+    "stroke-width": "2"
+  }));
+
+  // X axis labels: show up to ~8 labels
+  const maxLabels = 8;
+  const step = Math.max(1, Math.ceil(monthly.length / maxLabels));
+
+  for (let i = 0; i < monthly.length; i += step) {
+    const px = x(i);
+    const label = formatMonthLabel(monthly[i].month);
+    const t = svgEl("text", { x: px, y: margin.top + ih + 22, "text-anchor": "middle", class: "axisText" });
+    t.textContent = label;
+    chartSvg.appendChild(t);
+  }
+
+  // Optionally add dots (small)
+  for (let i = 0; i < monthly.length; i++) {
+    const px = x(i);
+    const py = y(monthly[i].count);
+    chartSvg.appendChild(svgEl("circle", {
+      cx: px, cy: py, r: 2.5,
+      fill: "rgba(35, 154, 59, 0.95)"
+    }));
+  }
+}
+
+/* ---------------------------
+   Players dropdown + refresh
+----------------------------*/
 
 function populatePlayers(rows) {
   const set = new Set();
@@ -311,9 +438,11 @@ let currentRows = [];
 
 function refresh() {
   const playerValue = playerSelect.value || "ALL";
-  const { counts, details, start, end } = buildCountsAndDetails(currentRows, playerValue);
+  const { counts, details, monthly, start, end } = buildCountsDetailsMonthly(currentRows, playerValue);
   if (!start) return;
+
   renderGrid(counts, details, start, end);
+  renderAreaChart(monthly, playerValue);
 }
 
 playerSelect.addEventListener("change", refresh);
