@@ -1,0 +1,131 @@
+"player","id","session_start","duration_minutes","last_state","level","name"
+player6,1885,"2024-04-23 12:28:57",20,retro,12,A Simple Drill
+player11,1886,"2024-04-23 12:33:23",7,completed,1,Welcome Party
+player11,1887,"2024-04-23 12:43:11",21,retro,3,Too Good To Be True V2
+player11,1894,"2024-04-24 08:32:26",18,retro,7,Rumours
+player11,1895,"2024-04-24 09:08:05",28,aborted,16,Radio Silence
+player11,1896,"2024-04-24 09:47:09",21,retro,14,Missing Delivery V2
+player6,1900,"2024-04-24 11:37:42",14,retro,7,Rumours
+player6,1901,"2024-04-24 12:03:14",19,retro,16,Radio Silence
+player6,1903,"2024-04-24 13:47:52",21,retro,14,Missing Delivery V2
+player11,1904,"2024-04-25 06:18:52",245,aborted,7,Rumours
+player1,4227,"2025-05-14 10:08:19",27,retro,3,Too Good To Be True V2
+player1,4231,"2025-05-14 10:53:29",15,aborted,27,First day blues
+player1,4361,"2025-05-27 14:05:47",25,retro,5,Bezs Beatles Day! V2
+player1,4362,"2025-05-27 14:45:52",13,retro,27,First day blues
+player6,4388,"2025-05-29 11:51:53",19,retro,5,Bezs Beatles Day! V2
+player7,4405,"2025-05-30 15:45:09",9,aborted,3,Too Good To Be True V2
+player7,4406,"2025-05-30 15:55:26",28,retro,3,Too Good To Be True V2
+player6,4488,"2025-06-05 11:46:31",17,retro,6,The Big Investor
+player7,4505,"2025-06-06 15:22:55",26,retro,5,Bezs Beatles Day! V2
+player6,4568,"2025-06-12 11:46:08",21,retro,4,Roblox
+player1,4604,"2025-06-16 13:04:13",23,retro,6,The Big Investor
+player7,4662,"2025-06-20 15:25:31",24,retro,6,The Big Investor
+player1,4693,"2025-06-24 13:02:38",19,retro,7,Rumours
+player6,4726,"2025-06-26 11:46:24",18,retro,4,Roblox
+player3,4738,"2025-06-27 09:19:49",23,retro,3,Too Good To Be True V2
+player7,4746,"2025-06-27 15:22:25",18,retro,7,Rumours
+player8,4760,"2025-06-30 15:16:15",26,retro,3,Too Good To Be True V2
+player11,4773,"2025-07-01 09:32:59",15,delay_cleanup,27,First day blues
+player3,4797,"2025-07-02 11:08:10",20,retro,6,The Big Investor
+player1,4803,"2025-07-02 13:08:45",20,retro,14,Missing Delivery V2
+player6,4821,"2025-07-03 11:46:51",21,retro,17,Version confusion
+player7,4845,"2025-07-04 15:20:14",21,retro,14,Missing Delivery V2
+player11,4870,"2025-07-08 09:04:30",20,retro,5,Bezs Beatles Day! V2
+player1,4881,"2025-07-08 11:17:59",22,retro,16,Radio Silence
+player9,4895,"2025-07-09 09:04:21",17,retro,5,Bezs Beatles Day! V2
+player3,4920,"2025-07-10 09:13:36",20,retro,26,Discount Disaster
+player7,4958,"2025-07-11 15:21:47",20,retro,16,Radio Silence
+player3,4968,"2025-07-14 09:40:22",30,retro,26,Discount Disaster
+player9,4993,"2025-07-15 13:04:32",19,retro,6,The Big Investor
+player1,5084,"2025-07-21 13:06:46",26,retro,4,Roblox
+player2,5102,"2025-07-22 13:25:37",22,retro,29,Too Good To Be True
+player11,5114,"2025-07-23 09:02:30",23,retro,6,The Big Investor
+player3,5115,"2025-07-23 09:09:11",19,retro,14,Missing Delivery V2
+player9,5142,"2025-07-24 13:05:33",9,retro,7,Rumours
+player2,5191,"2025-07-29 12:41:44",29,retro,5,Bezs Beatles Day! V2
+player4,5222,"2025-07-31 09:26:04",17,retro,29,Too Good To Be True
+player9,5240,"2025-08-01 13:02:18",21,retro,14,Missing Delivery V2
+player7,5243,"2025-08-01 15:24:34",24,retro,4,Roblox
+player15,5259,"2025-08-04 21:38:59",11,retro,27,First day blues
+player9,5268,"2025-08-05 13:03:27",22,retro,16,Radio Silence
+player15,5270,"2025-08-05 14:12:02",20,retro,29,Too Good To Be True
+player5,5271,"2025-08-05 14:14:46",27,retro,29,Too Good To Be True
+player8,5272,"2025-08-05 16:06:34",25,retro,5,Bezs Beatles Day! V2
+player11,5282,"2025-08-06 11:06:53",17,retro,7,Rumours
+player14,5287,"2025-08-06 15:08:32",25,retro,29,Too Good To Be True
+player4,5292,"2025-08-07 09:06:26",21,retro,5,Bezs Beatles Day! V2
+player6,5299,"2025-08-07 11:51:00",20,retro,8,The Chain
+player14,5334,"2025-08-12 09:02:52",26,retro,5,Bezs Beatles Day! V2
+player11,5338,"2025-08-12 11:01:54",19,retro,14,Missing Delivery V2
+player9,5345,"2025-08-12 13:04:03",21,retro,4,Roblox
+player15,5346,"2025-08-12 14:02:30",32,retro,5,Bezs Beatles Day! V2
+player8,5349,"2025-08-12 16:09:32",20,retro,6,The Big Investor
+player5,5362,"2025-08-13 12:04:21",24,retro,5,Bezs Beatles Day! V2
+player4,5376,"2025-08-14 09:09:43",18,retro,6,The Big Investor
+player2,5386,"2025-08-14 14:12:35",22,retro,7,Rumours
+player7,5403,"2025-08-15 15:30:06",22,retro,8,The Chain
+player8,5439,"2025-08-19 16:02:47",24,retro,7,Rumours
+player5,5459,"2025-08-20 14:10:48",21,retro,6,The Big Investor
+player4,5478,"2025-08-21 09:10:32",14,retro,7,Rumours
+player6,5489,"2025-08-21 11:46:44",21,retro,28,Memory Lane
+player2,5493,"2025-08-21 14:22:26",24,retro,14,Missing Delivery V2
+player15,5519,"2025-08-26 14:02:53",21,retro,6,The Big Investor
+player4,5538,"2025-08-28 09:06:59",18,retro,14,Missing Delivery V2
+player2,5549,"2025-08-28 14:02:28",23,retro,16,Radio Silence
+player5,5552,"2025-08-28 14:33:37",15,retro,7,Rumours
+player13,5568,"2025-08-29 12:11:52",11,retro,29,Too Good To Be True
+player8,5604,"2025-09-02 16:08:47",22,retro,14,Missing Delivery V2
+player15,5620,"2025-09-03 14:03:39",21,retro,7,Rumours
+player5,5621,"2025-09-03 14:04:26",23,retro,14,Missing Delivery V2
+player12,5625,"2025-09-03 15:20:34",26,retro,29,Too Good To Be True
+player13,5668,"2025-09-05 16:08:59",19,retro,31,Bezs Beatles Day!
+player8,5695,"2025-09-09 16:03:57",21,retro,16,Radio Silence
+player5,5706,"2025-09-10 14:03:03",23,retro,16,Radio Silence
+player12,5707,"2025-09-10 15:09:03",18,retro,31,Bezs Beatles Day!
+player4,5715,"2025-09-11 09:04:48",21,retro,16,Radio Silence
+player6,5722,"2025-09-11 11:48:59",18,retro,14,Missing Delivery V2
+player13,5760,"2025-09-12 13:09:38",9,retro,27,First day blues
+player13,5761,"2025-09-12 13:23:53",16,retro,6,The Big Investor
+player7,5763,"2025-09-12 15:23:59",25,retro,18,The Switch
+player15,5777,"2025-09-15 16:32:28",21,retro,14,Missing Delivery V2
+player9,5897,"2025-09-23 13:09:16",22,retro,8,The Chain
+player15,5900,"2025-09-23 14:02:45",20,retro,16,Radio Silence
+player13,5970,"2025-09-26 14:02:39",31,retro,28,Memory Lane
+player4,5992,"2025-09-29 15:06:18",31,retro,30,DEFCON 1
+player15,6007,"2025-09-30 14:22:25",39,retro,30,DEFCON 1
+player12,6036,"2025-10-01 15:03:57",16,retro,7,Rumours
+player8,6041,"2025-10-01 16:05:30",18,retro,4,Roblox
+player5,6081,"2025-10-03 10:11:21",32,retro,30,DEFCON 1
+player1,6110,"2025-10-06 13:37:29",35,retro,30,DEFCON 1
+player9,6173,"2025-10-07 13:04:45",32,retro,30,DEFCON 1
+player12,6234,"2025-10-08 15:03:40",21,retro,32,The Big Investor V2
+player6,6254,"2025-10-09 11:51:20",30,retro,30,DEFCON 1
+player12,6315,"2025-10-15 15:04:35",24,retro,14,Missing Delivery V2
+player8,6318,"2025-10-15 16:07:12",31,retro,30,DEFCON 1
+player13,6341,"2025-10-17 08:12:44",35,retro,30,DEFCON 1
+player2,6357,"2025-10-17 14:03:21",32,retro,30,DEFCON 1
+player4,6501,"2025-10-29 16:02:29",16,retro,4,Roblox
+player15,6507,"2025-10-30 07:32:41",21,retro,4,Roblox
+player7,6520,"2025-10-31 16:23:03",34,retro,30,DEFCON 1
+player11,6556,"2025-11-04 06:48:02",15,aborted,16,Radio Silence
+player9,6591,"2025-11-04 14:05:39",25,retro,18,The Switch
+player11,6603,"2025-11-05 06:32:26",20,retro,16,Radio Silence
+player12,6618,"2025-11-05 16:06:02",21,retro,16,Radio Silence
+player4,6715,"2025-11-10 11:04:10",22,retro,18,The Switch
+player15,6730,"2025-11-11 12:06:59",27,retro,18,The Switch
+player10,6748,"2025-11-12 13:16:41",25,retro,29,Too Good To Be True
+player1,6781,"2025-11-14 14:10:06",27,retro,8,The Chain
+player1,6783,"2025-11-14 14:57:34",9,aborted,29,Too Good To Be True
+player6,6846,"2025-11-20 12:54:46",18,retro,16,Radio Silence
+player1,6870,"2025-11-24 14:09:19",25,retro,18,The Switch
+player12,6917,"2025-11-26 16:02:51",20,retro,4,Roblox
+player7,6965,"2025-11-28 16:19:22",24,retro,17,Version confusion
+player10,7160,"2025-12-16 13:09:23",22,retro,5,Bezs Beatles Day! V2
+player16,7276,"2026-01-06 16:59:51",42,retro,30,DEFCON 1
+player1,7326,"2026-01-08 14:07:06",30,retro,28,Memory Lane
+player10,7391,"2026-01-13 13:11:45",23,retro,32,The Big Investor V2
+player9,7392,"2026-01-13 14:04:02",15,retro,17,Version confusion
+player8,7416,"2026-01-14 17:12:03",24,retro,8,The Chain
+player6,7428,"2026-01-15 12:48:45",21,retro,18,The Switch
+player15,7464,"2026-01-20 12:10:37",27,retro,8,The Chain
