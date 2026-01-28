@@ -75,34 +75,27 @@
         box-shadow: 0 6px 18px rgba(0,0,0,0.25);
       }
 
-      /* Area chart section */
+      /* Charts section */
       #chartWrap {
         margin-top: 18px;
         padding-top: 12px;
         border-top: 1px solid #eee;
-      }
-
-      #chartTitle {
-        font-size: 13px;
-        color: #444;
-        margin-bottom: 8px;
-      }
-
-      #areaChart {
-        width: 100%;
         max-width: 980px;
       }
 
-      .axisText {
-        font-size: 11px;
-        fill: #666;
+      .chartTitle {
+        font-size: 13px;
+        color: #444;
+        margin: 10px 0 8px;
       }
 
-      .gridLine {
-        stroke: #eee;
-        stroke-width: 1;
-        shape-rendering: crispEdges;
-      }
+      #areaChart { width: 100%; max-width: 980px; }
+      #playerMonthHeatmap { width: 100%; max-width: 980px; }
+
+      .axisText { font-size: 11px; fill: #666; }
+      .gridLine { stroke: #eee; stroke-width: 1; shape-rendering: crispEdges; }
+      .hmCellText { font-size: 10px; fill: #222; dominant-baseline: middle; text-anchor: middle; }
+      .hmPlayerText { font-size: 11px; fill: #444; dominant-baseline: middle; }
     </style>
   </head>
   <body>
@@ -135,8 +128,11 @@
     </div>
 
     <div id="chartWrap">
-      <div id="chartTitle">Sessions per month</div>
+      <div id="chartTitle" class="chartTitle">Sessions per month</div>
       <svg id="areaChart" viewBox="0 0 980 220" preserveAspectRatio="xMinYMin meet"></svg>
+
+      <div id="hmTitle" class="chartTitle">Player-by-month usage</div>
+      <svg id="playerMonthHeatmap" viewBox="0 0 980 340" preserveAspectRatio="xMinYMin meet"></svg>
     </div>
 
     <div id="tooltip"></div>
