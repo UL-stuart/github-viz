@@ -436,7 +436,16 @@ function valueToColor(v, vmax) {
   });
 }
 
-function getMatrixLayout(monthsCount) {
+function clamp(n, lo, hi) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function estimateLabelWFromText(maxChars) {
+  // Rough character width estimate for the current font (~7px per char) + padding
+  return Math.round(maxChars * 7 + 24);
+}
+
+function getMatrixLayout(monthsCount, labelW) {
   // One source of truth so player/drill heatmaps align perfectly
   const W_BASE = 980;
   const leftPad = 10;
@@ -447,7 +456,7 @@ function getMatrixLayout(monthsCount) {
   const rowH = 22;
   const cellH = 18;
 
-  const labelW = 320;     // SAME for both matrices
+  // labelW is now dynamic + shared across both heatmaps
   const minCellW = 40;
   const gapInCell = 6;
 
@@ -473,12 +482,13 @@ function renderMatrixHeatmap({
   rowLabels,
   rowToMonthMap,
   months,
-  valueTitlePrefix
+  valueTitlePrefix,
+  labelW,
 }) {
   if (!svg) return;
   clearSvg(svg);
 
-  const L = getMatrixLayout(months.length);
+  const L = getMatrixLayout(months.length, labelW);
 
   let vmax = 0;
   for (const r of rowLabels) {
@@ -522,8 +532,8 @@ function renderMatrixHeatmap({
       "text-anchor": "end"
     });
 
-    const maxChars = 44;
-    label.textContent = rFull.length > maxChars ? rFull.slice(0, maxChars - 1) + "…" : rFull;
+    const MAX_CHARS = 44;
+    label.textContent = rFull.length > MAX_CHARS ? rFull.slice(0, MAX_CHARS - 1) + "…" : rFull;
     svg.appendChild(label);
 
     const rm = rowToMonthMap.get(rFull);
@@ -567,7 +577,7 @@ function renderMatrixHeatmap({
   svg.appendChild(lg);
 }
 
-function renderPlayerMonthHeatmap(playerMonthly, months, allPlayersList, playerValue) {
+function renderPlayerMonthHeatmap(playerMonthly, months, allPlayersList, playerValue, labelW) {
   const players = (playerValue === "ALL") ? allPlayersList.slice() : [playerValue];
   renderMatrixHeatmap({
     svg: hmSvg,
@@ -576,11 +586,12 @@ function renderPlayerMonthHeatmap(playerMonthly, months, allPlayersList, playerV
     rowLabels: players,
     rowToMonthMap: playerMonthly,
     months,
-    valueTitlePrefix: "Player"
+    valueTitlePrefix: "Player",
+    labelW,
   });
 }
 
-function renderDrillMonthHeatmap(drillMonthly, months) {
+function renderDrillMonthHeatmap(drillMonthly, months, labelW) {
   let drills = Array.from(drillMonthly.keys());
 
   drills.sort((a, b) => {
@@ -597,7 +608,8 @@ function renderDrillMonthHeatmap(drillMonthly, months) {
     rowLabels: drills,
     rowToMonthMap: drillMonthly,
     months,
-    valueTitlePrefix: "Drill"
+    valueTitlePrefix: "Drill",
+    labelW,
   });
 }
 
@@ -632,10 +644,23 @@ function refresh() {
 
   if (!start) return;
 
+  // ---- Compute a SHARED label width for BOTH matrices ----
+  const playersShown = (playerValue === "ALL") ? allPlayersList.slice() : [playerValue];
+  const drillsShown = Array.from(drillMonthly.keys());
+
+  const MAX_CHARS = 44;
+  const maxChars = Math.max(
+    0,
+    ...playersShown.map(s => Math.min(String(s).length, MAX_CHARS)),
+    ...drillsShown.map(s => Math.min(String(s).length, MAX_CHARS))
+  );
+
+  const sharedLabelW = clamp(estimateLabelWFromText(maxChars), 90, 340);
+
   renderGrid(counts, details, start, end);
   renderAreaChart(monthly, playerValue);
-  renderPlayerMonthHeatmap(playerMonthly, months, allPlayersList, playerValue);
-  renderDrillMonthHeatmap(drillMonthly, months);
+  renderPlayerMonthHeatmap(playerMonthly, months, allPlayersList, playerValue, sharedLabelW);
+  renderDrillMonthHeatmap(drillMonthly, months, sharedLabelW);
 }
 
 playerSelect.addEventListener("change", refresh);
