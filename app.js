@@ -9,6 +9,7 @@ const tooltip = document.getElementById("tooltip");
 const chartSvg = document.getElementById("areaChart");
 const cumulativeSvg = document.getElementById("cumulativeChart");
 const cumulativeByPlayerSvg = document.getElementById("cumulativeByPlayerChart");
+const cumulativeMetricsSvg = document.getElementById("cumulativeMetricsChart");
 const chartTitle = document.getElementById("chartTitle");
 
 const hmSvg = document.getElementById("playerMonthHeatmap");
@@ -18,7 +19,7 @@ const drillHmSvg = document.getElementById("drillMonthHeatmap");
 const drillHmTitle = document.getElementById("drillHmTitle");
 
 // Default CSV to auto-load on page start (must be served over HTTP)
-const DEFAULT_CSV_URL = "example.csv";
+const DEFAULT_CSV_URL = "example2.csv";
 
 const COLORS = ["#ebedf0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"]; // 0..4+
 const CAP = 4;
@@ -492,6 +493,271 @@ function renderCumulativeChart(monthly, playerValue) {
    SVG Cumulative Line Chart by Player (monthly cumulative)
 ----------------------------*/
 
+
+/* ---------------------------
+   Cumulative score metrics (example2.csv)
+----------------------------*/
+
+const SCORE_METRICS = [
+  "identify_scope",
+  "incident_mechanics",
+  "external_comms",
+  "internal_comms",
+  "commanding_the_incident",
+];
+
+function hasScoreColumns(fields) {
+  if (!fields || !Array.isArray(fields)) return false;
+  const set = new Set(fields.map(f => String(f).trim().toLowerCase()));
+  return SCORE_METRICS.every(c => set.has(c));
+}
+
+function parseNumberOrZero(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+
+function metricLabel(key) {
+  switch (key) {    case "identify_scope": return "identify_scope";
+    case "incident_mechanics": return "incident_mechanics";
+    case "external_comms": return "external_comms";
+    case "internal_comms": return "internal_comms";
+    case "commanding_the_incident": return "commanding_the_incident";
+    default: return key;
+  }
+}
+
+function buildMetricMonthlyCumulative(rows, playerValue) {
+  let maxDate = null;
+  const parsed = [];
+
+
+  // Resolve the player column name (case-insensitive) once
+  let playerKey = null;
+  const firstRow = (rows && rows.length) ? rows[0] : null;
+  if (firstRow) {
+    for (const k of Object.keys(firstRow)) {
+      if (String(k).trim().toLowerCase() === "player") { playerKey = k; break; }
+    }
+  }
+  for (const r of rows || []) {
+    const d = parseSessionStart(r.session_start);
+    if (!d) continue;
+    const dateUTC = toDateOnlyUTC(d);
+    if (!maxDate || dateUTC > maxDate) maxDate = dateUTC;
+
+    // Apply player filter if requested and if a player column exists
+    if (playerValue && playerValue !== "ALL" && playerKey) {
+      const pv = (r[playerKey] ?? "").toString();
+      if (pv !== playerValue) continue;
+    }
+    parsed.push({ dateUTC, row: r });
+  }
+
+  if (!maxDate) return { months: [], start: null, end: null, series: new Map() };
+
+  const end = maxDate;
+  const start = addDays(end, -364);
+
+  // Continuous month keys across window
+  const months = [];
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  const endCursor = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+  for (let d = new Date(cursor); d <= endCursor; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
+    months.push(monthKey(d));
+  }
+
+  // Monthly sums for each metric
+  const monthlySums = new Map(); // metric -> Map(month -> sum)
+  for (const m of SCORE_METRICS) monthlySums.set(m, new Map());
+
+  for (const item of parsed) {
+    if (item.dateUTC < start || item.dateUTC > end) continue;
+
+    const mk = monthKey(item.dateUTC);
+    const r = item.row;
+
+    for (const m of SCORE_METRICS) {
+      const mm = monthlySums.get(m);
+      const add = parseNumberOrZero(r[m]);mm.set(mk, (mm.get(mk) || 0) + add);
+    }
+  }
+
+  // Turn into cumulative arrays aligned to `months`
+  const series = new Map(); // metric -> array of cumulative totals
+  for (const m of SCORE_METRICS) {
+    const mm = monthlySums.get(m);
+    let run = 0;
+    const arr = months.map(mon => {
+      run += (mm.get(mon) || 0);
+      return run;
+    });
+    series.set(m, arr);
+  }
+
+  return { months, start, end, series };
+}
+
+function renderCumulativeMetricsChart(rows, playerValue) {
+  if (!cumulativeMetricsSvg) return;
+
+  clearSvg(cumulativeMetricsSvg);
+
+  if (!rows || rows.length === 0) {
+    const t = svgEl("text", { x: 10, y: 20, class: "axisText" });
+    t.textContent = "No data loaded.";
+    cumulativeMetricsSvg.appendChild(t);
+    return;
+  }
+
+  // Only render this chart if the CSV contains the scoring columns
+  const fields = Object.keys(rows[0] || {});
+  if (!hasScoreColumns(fields)) {
+    const t = svgEl("text", { x: 10, y: 20, class: "axisText" });
+    t.textContent = "This CSV does not contain the scoring columns needed for this chart.";
+    cumulativeMetricsSvg.appendChild(t);
+    return;
+  }
+
+  
+  const { months, series } = buildMetricMonthlyCumulative(rows, playerValue);
+  if (!months || months.length === 0) {
+    const t = svgEl("text", { x: 10, y: 20, class: "axisText" });
+    t.textContent = (playerValue && playerValue !== "ALL")
+      ? `No score data for ${playerValue} in the last 365-day window.`
+      : "No score data in the last 365-day window.";
+    cumulativeMetricsSvg.appendChild(t);
+    return;
+  }
+
+  const W = 980;
+  const PLOT_H = 168;
+  const margin = { top: 0, right: 16, bottom: 40, left: 44 };
+
+  // Legend layout pass
+  const legendX0 = margin.left;
+  const rowH = 14;
+  const maxX = W - margin.right;
+  const sw = 14;
+
+  function textWApprox(str) { return str.length * 7; }
+
+  const keys = SCORE_METRICS.slice();
+  let lx = legendX0;
+  let ly = 18;
+  let legendRows = 1;
+
+  for (const k of keys) {
+    const label = metricLabel(k);
+    const needed = sw + 6 + textWApprox(label) + 16;
+    if (lx + needed > maxX) {
+      lx = legendX0;
+      ly += rowH;
+      legendRows++;
+    }
+    lx += needed;
+  }
+
+  const legendHeight = (18) + (legendRows - 1) * rowH + 16;
+  margin.top = legendHeight + 10;
+
+  const H = margin.top + PLOT_H + margin.bottom;
+  cumulativeMetricsSvg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  const iw = W - margin.left - margin.right;
+  const ih = H - margin.top - margin.bottom;
+
+  // Compute maxY across all series
+  let maxY = 1;
+  for (const k of keys) {
+    const arr = series.get(k) || [];
+    for (const v of arr) if (v > maxY) maxY = v;
+  }
+
+  const x = (i) => margin.left + (months.length === 1 ? 0 : (i * iw) / (months.length - 1));
+  const y = (v) => margin.top + ih - (v * ih) / maxY;
+
+  // Colors (6 series)
+  const PALETTE = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#17becf"];
+
+  // Draw legend (above plot)
+  lx = legendX0;
+  ly = 18;
+  keys.forEach((k, idx) => {
+    const col = PALETTE[idx % PALETTE.length];
+    const label = metricLabel(k);
+    const needed = sw + 6 + textWApprox(label) + 16;
+
+    if (lx + needed > maxX) {
+      lx = legendX0;
+      ly += rowH;
+    }
+
+    cumulativeMetricsSvg.appendChild(svgEl("line", {
+      x1: lx, y1: ly, x2: lx + sw, y2: ly,
+      stroke: col, "stroke-width": "3", "stroke-linecap": "round"
+    }));
+    const t = svgEl("text", { x: lx + sw + 6, y: ly + 4, class: "axisText" });
+    t.textContent = label;
+    cumulativeMetricsSvg.appendChild(t);
+
+    lx += needed;
+  });
+
+  // Grid lines + y labels
+  const gridLines = 3;
+  for (let i = 0; i <= gridLines; i++) {
+    const val = (maxY * i) / gridLines;
+    const yy = y(val);
+    cumulativeMetricsSvg.appendChild(svgEl("line", {
+      x1: margin.left, y1: yy, x2: margin.left + iw, y2: yy, class: "gridLine"
+    }));
+    const t = svgEl("text", { x: margin.left - 8, y: yy + 4, "text-anchor": "end", class: "axisText" });
+    t.textContent = (Math.round(val * 100) / 100).toString();
+    cumulativeMetricsSvg.appendChild(t);
+  }
+
+  // X labels
+  const maxLabels = 8;
+  const step = Math.max(1, Math.ceil(months.length / maxLabels));
+  for (let i = 0; i < months.length; i += step) {
+    const px = x(i);
+    const label = formatMonthLabel(months[i]);
+    const t = svgEl("text", { x: px, y: margin.top + ih + 22, "text-anchor": "middle", class: "axisText" });
+    t.textContent = label;
+    cumulativeMetricsSvg.appendChild(t);
+  }
+
+  // Draw lines
+  keys.forEach((k, idx) => {
+    const arr = series.get(k) || [];
+    let dLine = "";
+    for (let i = 0; i < arr.length; i++) {
+      const px = x(i);
+      const py = y(arr[i]);
+      dLine += (i === 0 ? `M ${px} ${py}` : ` L ${px} ${py}`);
+    }
+    cumulativeMetricsSvg.appendChild(svgEl("path", {
+      d: dLine,
+      fill: "none",
+      stroke: PALETTE[idx % PALETTE.length],
+      "stroke-width": "2",
+      "stroke-linejoin": "round",
+      "stroke-linecap": "round",
+      opacity: "0.95"
+    }));
+
+    for (let i = 0; i < arr.length; i++) {
+      cumulativeMetricsSvg.appendChild(svgEl("circle", {
+        cx: x(i), cy: y(arr[i]), r: 2.2,
+        fill: PALETTE[idx % PALETTE.length],
+        opacity: "0.95"
+      }));
+    }
+  });
+}
+
 function renderCumulativeByPlayerChart(playerMonthly, months, playersShown) {
   if (!cumulativeByPlayerSvg) return;
 
@@ -499,10 +765,10 @@ function renderCumulativeByPlayerChart(playerMonthly, months, playersShown) {
 
   const W = 980;
 
-  // Keep the plotting region height stable; grow the SVG height upward if legend needs more room.
+  // Keep plot area readable; grow SVG height if legend needs more room.
   const PLOT_H = 168;
 
-  // Base margins (top is computed after legend layout)
+  // Base margins (top will be computed after legend layout)
   const margin = { top: 0, right: 16, bottom: 40, left: 44 };
 
   if (!months || months.length === 0 || !playersShown || playersShown.length === 0) {
@@ -512,7 +778,7 @@ function renderCumulativeByPlayerChart(playerMonthly, months, playersShown) {
     return;
   }
 
-  // Build totals per player (for ordering + optional truncation)
+  // Order players by total sessions in window (so the most-used appear first)
   const totals = playersShown.map(p => {
     const pm = playerMonthly.get(p);
     const total = months.reduce((acc, m) => acc + (pm ? (pm.get(m) || 0) : 0), 0);
@@ -536,10 +802,10 @@ function renderCumulativeByPlayerChart(playerMonthly, months, playersShown) {
   const maxX = W - margin.right;
   const sw = 14;
 
-  function textWApprox(str) { return str.length * 7; } // ~7px/char for system UI font
+  function textWApprox(str) { return str.length * 7; } // consistent with other estimates
 
   let lx = legendX0;
-  let ly = 18; // baseline for first legend row
+  let ly = 18; // first legend row baseline
   let legendRows = 1;
 
   for (let i = 0; i < players.length; i++) {
@@ -555,18 +821,15 @@ function renderCumulativeByPlayerChart(playerMonthly, months, playersShown) {
     lx += needed;
   }
 
-  // Legend height in SVG coords:
-  // - first row baseline ~18
-  // - each wrap adds rowH
-  // - + padding below legend rows
-  // - + an extra line for the truncation note (if present)
-  const legendHeight =
-    18 + (legendRows - 1) * rowH + 16 + (truncated ? 14 : 0);
+  // Legend height inside SVG coordinates.
+  // Baseline starts at y=18; each wrap adds rowH.
+  // Add padding + optional note line.
+  const legendHeight = (18) + (legendRows - 1) * rowH + 16 + (truncated ? 14 : 0);
 
-  // Now set top margin so plot always starts below the legend band.
+  // Ensure plot starts below legend, always.
   margin.top = legendHeight + 10;
 
-  // Grow overall SVG height so plot stays readable.
+  // Grow overall SVG height so plot doesn't get squashed.
   const H = margin.top + PLOT_H + margin.bottom;
   cumulativeByPlayerSvg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
@@ -591,7 +854,7 @@ function renderCumulativeByPlayerChart(playerMonthly, months, playersShown) {
   const x = (i) => margin.left + (months.length === 1 ? 0 : (i * iw) / (months.length - 1));
   const y = (v) => margin.top + ih - (v * ih) / maxY;
 
-  // ---------- Draw legend (guaranteed above plot) ----------
+  // ---------- Draw legend (now guaranteed above plot) ----------
   lx = legendX0;
   ly = 18;
 
@@ -619,8 +882,9 @@ function renderCumulativeByPlayerChart(playerMonthly, months, playersShown) {
   }
 
   if (truncated) {
-    // Place the note at the bottom of the legend band (still above plot).
-    const note = svgEl("text", { x: margin.left, y: legendHeight - 4, class: "axisText" });
+    // Put the note at the bottom of the legend band (still above plot)
+    const noteY = legendHeight - 4;
+    const note = svgEl("text", { x: margin.left, y: noteY, class: "axisText" });
     note.textContent = `Showing top ${MAX_SERIES} players by sessions in window`;
     cumulativeByPlayerSvg.appendChild(note);
   }
@@ -913,6 +1177,9 @@ function refresh() {
   const { counts, details, monthly, playerMonthly, drillMonthly, months, start, end } =
     buildAllAggregations(currentRows, playerValue);
 
+  // Score metrics chart comes from example2.csv (renders even if the main CSV is empty)
+  renderCumulativeMetricsChart(currentRows, playerValue);
+
   if (!start) return;
 
   // ---- Compute a SHARED label width for BOTH matrices ----
@@ -981,6 +1248,7 @@ async function loadDefaultCsv(url) {
 }
 
 // Kick off default load on initial page render
+
 window.addEventListener("DOMContentLoaded", () => {
   loadDefaultCsv(DEFAULT_CSV_URL);
 });
