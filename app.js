@@ -7,6 +7,8 @@ const windowLabel = document.getElementById("windowLabel");
 const tooltip = document.getElementById("tooltip");
 
 const chartSvg = document.getElementById("areaChart");
+const cumulativeSvg = document.getElementById("cumulativeChart");
+const cumulativeByPlayerSvg = document.getElementById("cumulativeByPlayerChart");
 const chartTitle = document.getElementById("chartTitle");
 
 const hmSvg = document.getElementById("playerMonthHeatmap");
@@ -409,6 +411,275 @@ function renderAreaChart(monthly, playerValue) {
 }
 
 /* ---------------------------
+   SVG Cumulative Line Chart (monthly cumulative)
+----------------------------*/
+
+function renderCumulativeChart(monthly, playerValue) {
+  if (!cumulativeSvg) return;
+
+  clearSvg(cumulativeSvg);
+
+  const W = 980, H = 220;
+  const margin = { top: 16, right: 16, bottom: 32, left: 44 };
+  const iw = W - margin.left - margin.right;
+  const ih = H - margin.top - margin.bottom;
+
+  if (!monthly || monthly.length === 0) {
+    const t = svgEl("text", { x: 10, y: 20, class: "axisText" });
+    t.textContent = "No data in window.";
+    cumulativeSvg.appendChild(t);
+    return;
+  }
+
+  // Build cumulative series
+  let run = 0;
+  const cum = monthly.map(d => {
+    run += (d.count || 0);
+    return { month: d.month, count: run };
+  });
+
+  const maxY = Math.max(...cum.map(d => d.count), 1);
+
+  const x = (i) => margin.left + (cum.length === 1 ? 0 : (i * iw) / (cum.length - 1));
+  const y = (v) => margin.top + ih - (v * ih) / maxY;
+
+  // Grid lines + y labels
+  const gridLines = 3;
+  for (let i = 0; i <= gridLines; i++) {
+    const val = (maxY * i) / gridLines;
+    const yy = y(val);
+    cumulativeSvg.appendChild(svgEl("line", { x1: margin.left, y1: yy, x2: margin.left + iw, y2: yy, class: "gridLine" }));
+    const t = svgEl("text", { x: margin.left - 8, y: yy + 4, "text-anchor": "end", class: "axisText" });
+    t.textContent = Math.round(val).toString();
+    cumulativeSvg.appendChild(t);
+  }
+
+  // Line path
+  let dLine = "";
+  for (let i = 0; i < cum.length; i++) {
+    const px = x(i);
+    const py = y(cum[i].count);
+    dLine += (i === 0 ? `M ${px} ${py}` : ` L ${px} ${py}`);
+  }
+
+  cumulativeSvg.appendChild(svgEl("path", {
+    d: dLine,
+    fill: "none",
+    stroke: "rgba(35, 154, 59, 0.95)",
+    "stroke-width": "2"
+  }));
+
+  // X labels
+  const maxLabels = 8;
+  const step = Math.max(1, Math.ceil(cum.length / maxLabels));
+  for (let i = 0; i < cum.length; i += step) {
+    const px = x(i);
+    const label = formatMonthLabel(cum[i].month);
+    const t = svgEl("text", { x: px, y: margin.top + ih + 22, "text-anchor": "middle", class: "axisText" });
+    t.textContent = label;
+    cumulativeSvg.appendChild(t);
+  }
+
+  // Dots
+  for (let i = 0; i < cum.length; i++) {
+    const px = x(i);
+    const py = y(cum[i].count);
+    cumulativeSvg.appendChild(svgEl("circle", { cx: px, cy: py, r: 2.5, fill: "rgba(35, 154, 59, 0.95)" }));
+  }
+}
+
+/* ---------------------------
+   SVG Cumulative Line Chart by Player (monthly cumulative)
+----------------------------*/
+
+function renderCumulativeByPlayerChart(playerMonthly, months, playersShown) {
+  if (!cumulativeByPlayerSvg) return;
+
+  clearSvg(cumulativeByPlayerSvg);
+
+  const W = 980;
+
+  // Keep the plotting region height stable; grow the SVG height upward if legend needs more room.
+  const PLOT_H = 168;
+
+  // Base margins (top is computed after legend layout)
+  const margin = { top: 0, right: 16, bottom: 40, left: 44 };
+
+  if (!months || months.length === 0 || !playersShown || playersShown.length === 0) {
+    const t = svgEl("text", { x: 10, y: 20, class: "axisText" });
+    t.textContent = "No data in window.";
+    cumulativeByPlayerSvg.appendChild(t);
+    return;
+  }
+
+  // Build totals per player (for ordering + optional truncation)
+  const totals = playersShown.map(p => {
+    const pm = playerMonthly.get(p);
+    const total = months.reduce((acc, m) => acc + (pm ? (pm.get(m) || 0) : 0), 0);
+    return { player: p, total };
+  }).sort((a, b) => b.total - a.total || a.player.localeCompare(b.player));
+
+  const MAX_SERIES = 15;
+  const truncated = totals.length > MAX_SERIES;
+  const players = (truncated ? totals.slice(0, MAX_SERIES) : totals).map(x => x.player);
+
+  // Palette (distinct, readable)
+  const PALETTE = [
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+    "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+    "#393b79", "#637939", "#8c6d31", "#843c39", "#7b4173"
+  ];
+
+  // ---------- Legend layout pass (compute required height) ----------
+  const legendX0 = margin.left;
+  const rowH = 14;
+  const maxX = W - margin.right;
+  const sw = 14;
+
+  function textWApprox(str) { return str.length * 7; } // ~7px/char for system UI font
+
+  let lx = legendX0;
+  let ly = 18; // baseline for first legend row
+  let legendRows = 1;
+
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    const label = p.length > 28 ? p.slice(0, 27) + "…" : p;
+    const needed = sw + 6 + textWApprox(label) + 16;
+
+    if (lx + needed > maxX) {
+      lx = legendX0;
+      ly += rowH;
+      legendRows++;
+    }
+    lx += needed;
+  }
+
+  // Legend height in SVG coords:
+  // - first row baseline ~18
+  // - each wrap adds rowH
+  // - + padding below legend rows
+  // - + an extra line for the truncation note (if present)
+  const legendHeight =
+    18 + (legendRows - 1) * rowH + 16 + (truncated ? 14 : 0);
+
+  // Now set top margin so plot always starts below the legend band.
+  margin.top = legendHeight + 10;
+
+  // Grow overall SVG height so plot stays readable.
+  const H = margin.top + PLOT_H + margin.bottom;
+  cumulativeByPlayerSvg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  const iw = W - margin.left - margin.right;
+  const ih = H - margin.top - margin.bottom;
+
+  // ---------- Precompute cumulative series ----------
+  const series = new Map(); // player -> [cum...]
+  let maxY = 1;
+
+  for (const p of players) {
+    const pm = playerMonthly.get(p);
+    let run = 0;
+    const arr = months.map(m => {
+      run += pm ? (pm.get(m) || 0) : 0;
+      return run;
+    });
+    series.set(p, arr);
+    for (const v of arr) if (v > maxY) maxY = v;
+  }
+
+  const x = (i) => margin.left + (months.length === 1 ? 0 : (i * iw) / (months.length - 1));
+  const y = (v) => margin.top + ih - (v * ih) / maxY;
+
+  // ---------- Draw legend (guaranteed above plot) ----------
+  lx = legendX0;
+  ly = 18;
+
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    const col = PALETTE[i % PALETTE.length];
+
+    const label = p.length > 28 ? p.slice(0, 27) + "…" : p;
+    const needed = sw + 6 + textWApprox(label) + 16;
+
+    if (lx + needed > maxX) {
+      lx = legendX0;
+      ly += rowH;
+    }
+
+    cumulativeByPlayerSvg.appendChild(svgEl("line", {
+      x1: lx, y1: ly, x2: lx + sw, y2: ly,
+      stroke: col, "stroke-width": "3", "stroke-linecap": "round"
+    }));
+    const t = svgEl("text", { x: lx + sw + 6, y: ly + 4, class: "axisText" });
+    t.textContent = label;
+    cumulativeByPlayerSvg.appendChild(t);
+
+    lx += needed;
+  }
+
+  if (truncated) {
+    // Place the note at the bottom of the legend band (still above plot).
+    const note = svgEl("text", { x: margin.left, y: legendHeight - 4, class: "axisText" });
+    note.textContent = `Showing top ${MAX_SERIES} players by sessions in window`;
+    cumulativeByPlayerSvg.appendChild(note);
+  }
+
+  // ---------- Grid lines + y labels ----------
+  const gridLines = 3;
+  for (let i = 0; i <= gridLines; i++) {
+    const val = (maxY * i) / gridLines;
+    const yy = y(val);
+    cumulativeByPlayerSvg.appendChild(svgEl("line", {
+      x1: margin.left, y1: yy, x2: margin.left + iw, y2: yy, class: "gridLine"
+    }));
+    const t = svgEl("text", { x: margin.left - 8, y: yy + 4, "text-anchor": "end", class: "axisText" });
+    t.textContent = Math.round(val).toString();
+    cumulativeByPlayerSvg.appendChild(t);
+  }
+
+  // ---------- Draw series lines ----------
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    const col = PALETTE[i % PALETTE.length];
+    const arr = series.get(p);
+
+    let dLine = "";
+    for (let j = 0; j < arr.length; j++) {
+      const px = x(j);
+      const py = y(arr[j]);
+      dLine += (j === 0 ? `M ${px} ${py}` : ` L ${px} ${py}`);
+    }
+
+    cumulativeByPlayerSvg.appendChild(svgEl("path", {
+      d: dLine,
+      fill: "none",
+      stroke: col,
+      "stroke-width": "2"
+    }));
+
+    // Dots (small)
+    for (let j = 0; j < arr.length; j++) {
+      cumulativeByPlayerSvg.appendChild(svgEl("circle", {
+        cx: x(j), cy: y(arr[j]), r: 2,
+        fill: col
+      }));
+    }
+  }
+
+  // ---------- X labels (months) ----------
+  const maxLabels = 8;
+  const step = Math.max(1, Math.ceil(months.length / maxLabels));
+  for (let i = 0; i < months.length; i += step) {
+    const px = x(i);
+    const label = formatMonthLabel(months[i]);
+    const t = svgEl("text", { x: px, y: margin.top + ih + 22, "text-anchor": "middle", class: "axisText" });
+    t.textContent = label;
+    cumulativeByPlayerSvg.appendChild(t);
+  }
+}
+
+/* ---------------------------
    Matrix Heatmaps (shared)
 ----------------------------*/
 
@@ -659,6 +930,8 @@ function refresh() {
 
   renderGrid(counts, details, start, end);
   renderAreaChart(monthly, playerValue);
+  renderCumulativeChart(monthly, playerValue);
+  renderCumulativeByPlayerChart(playerMonthly, months, playersShown);
   renderPlayerMonthHeatmap(playerMonthly, months, allPlayersList, playerValue, sharedLabelW);
   renderDrillMonthHeatmap(drillMonthly, months, sharedLabelW);
 }
