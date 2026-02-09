@@ -91,8 +91,6 @@
 
       #areaChart { width: 100%; max-width: 980px; }
       #cumulativeChart { width: 100%; max-width: 980px; }
-      #cumulativeMetricsChart { width: 100%; max-width: 980px; }
-      #cumulativeByPlayerChart { width: 100%; max-width: 980px; }
       #playerMonthHeatmap { width: 100%; max-width: 980px; }
       #drillMonthHeatmap { width: 100%; max-width: 980px; }
 
@@ -138,22 +136,34 @@
       <h2>Cumulative drills per month</h2>
       <svg id="cumulativeChart" viewBox="0 0 980 220" preserveAspectRatio="xMinYMin meet"></svg>
 
+      <!-- Added -->
       <h2>Cumulative score totals by month</h2>
-      <svg id="cumulativeMetricsChart" viewBox="0 0 980 240" preserveAspectRatio="xMinYMin meet"></svg>
+      <svg id="cumulativeMetricsChart" viewBox="0 0 980 260" preserveAspectRatio="xMinYMin meet"></svg>
 
+      <!-- Added -->
       <h2>Cumulative drills by player</h2>
       <svg id="cumulativeByPlayerChart" viewBox="0 0 980 260" preserveAspectRatio="xMinYMin meet"></svg>
+
 
       <h2>Player-by-month usage</h2>
       <svg id="playerMonthHeatmap" viewBox="0 0 980 340" preserveAspectRatio="xMinYMin meet"></svg>
 
       <h2>Drill-by-month usage</h2>
       <svg id="drillMonthHeatmap" viewBox="0 0 980 340" preserveAspectRatio="xMinYMin meet"></svg>
+
+      <h2 id="complexityHmTitle">Complexities Experienced Per Month</h2>
+      <svg id="complexityMonthHeatmap" viewBox="0 0 980 360" preserveAspectRatio="xMinYMin meet"></svg>
+
+      <h2 id="categoryHmTitle">Complexity Categories Per Month</h2>
+      <svg id="categoryMonthHeatmap" viewBox="0 0 980 360" preserveAspectRatio="xMinYMin meet"></svg>
+
+      <h2 id="cumulativeCategoryTitle">Cumulative Category Totals by Month</h2>
+      <svg id="cumulativeCategoryChart" viewBox="0 0 980 260" preserveAspectRatio="xMinYMin meet"></svg>
     </div>
 
     <div id="tooltip"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <script src="app.js"></script>
+    <script type="module" src="src/main.js"></script>
   </body>
 </html>
