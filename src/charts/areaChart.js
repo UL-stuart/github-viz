@@ -1,5 +1,6 @@
 import { clearSvg, svgEl, svgText } from "../core/svg.js";
 import { formatMonthLabel } from "../core/dates.js";
+import { CONFIG } from "../core/config.js"
 
 export function renderAreaChart(svg, monthly, titleEl, titleText) {
   if (!svg) return;
@@ -47,8 +48,8 @@ export function renderAreaChart(svg, monthly, titleEl, titleText) {
   const yBase = margin.top + ih;
   const dArea = `${dLine} L ${xN} ${yBase} L ${x0} ${yBase} Z`;
 
-  svg.appendChild(svgEl("path", { d: dArea, fill: "rgba(35, 154, 59, 0.20)", stroke: "none" }));
-  svg.appendChild(svgEl("path", { d: dLine, fill: "none", stroke: "rgba(35, 154, 59, 0.95)", "stroke-width": "2" }));
+  svg.appendChild(svgEl("path", { d: dArea, fill: CONFIG.AREA_FILL, stroke: "none" }));
+  svg.appendChild(svgEl("path", { d: dLine, fill: "none", stroke: CONFIG.LINE_COLOR, "stroke-width": "2" }));
 
   // X labels
   const maxLabels = 8;
@@ -64,6 +65,6 @@ export function renderAreaChart(svg, monthly, titleEl, titleText) {
 
   // Dots
   for (let i = 0; i < monthly.length; i++) {
-    svg.appendChild(svgEl("circle", { cx: x(i), cy: y(monthly[i].count), r: 2.5, fill: "rgba(35, 154, 59, 0.95)" }));
+    svg.appendChild(svgEl("circle", { cx: x(i), cy: y(monthly[i].count), r: 2.5, fill: CONFIG.LINE_COLOR }));
   }
 }

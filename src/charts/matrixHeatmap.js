@@ -1,4 +1,5 @@
 import { clearSvg, svgEl, svgText } from "../core/svg.js";
+import { CONFIG } from "../core/config.js"
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 function hexToRgb(hex) {
@@ -13,10 +14,10 @@ function rgbToHex({ r, g, b }) {
 
 // Simple gradient: light green -> dark green, with a light grey for zero.
 function valueToColor(v, vmax) {
-  if (v <= 0) return "#f3f4f6";
+  if (v <= 0) return CONFIG.COLORS[0];
   const t = vmax <= 0 ? 0 : Math.min(1, v / vmax);
-  const c0 = hexToRgb("#c6e48b");
-  const c1 = hexToRgb("#196127");
+  const c0 = hexToRgb(CONFIG.COLORS[2]);
+  const c1 = hexToRgb(CONFIG.COLORS[4]);
   const rgb = {
     r: Math.round(lerp(c0.r, c1.r, t)),
     g: Math.round(lerp(c0.g, c1.g, t)),
@@ -111,7 +112,8 @@ export function renderMatrixHeatmap({
   // Rows
   const MAX_CHARS = 44;
   for (let i = 0; i < rowLabels.length; i++) {
-    const rowName = rowLabels[i];
+    const rowNameRaw = rowLabels[i];
+    const rowName = String(rowNameRaw);
     const py = L.y0 + i * L.rowH;
 
     const label = svgEl("text", {
@@ -120,10 +122,18 @@ export function renderMatrixHeatmap({
       class: "hmPlayerText",
       "text-anchor": "end",
     });
-    label.textContent = rowName.length > MAX_CHARS ? rowName.slice(0, MAX_CHARS - 1) + "…" : rowName;
+
+    const shown = rowName.length > MAX_CHARS ? rowName.slice(0, MAX_CHARS - 1) + "…" : rowName;
+    label.textContent = shown;
+
+    // ✅ Patch: show full label on hover (so truncation doesn't lose information)
+    const labelTitle = svgEl("title");
+    labelTitle.textContent = rowName;
+    label.appendChild(labelTitle);
+
     svg.appendChild(label);
 
-    const rm = rowToMonthMap.get(rowName);
+    const rm = rowToMonthMap.get(rowNameRaw); // keep lookup using original key type
     for (let j = 0; j < months.length; j++) {
       const mo = months[j];
       const v = rm ? (rm.get(mo) || 0) : 0;

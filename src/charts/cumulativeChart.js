@@ -1,5 +1,6 @@
 import { clearSvg, svgEl, svgText } from "../core/svg.js";
 import { formatMonthLabel } from "../core/dates.js";
+import { CONFIG } from "../core/config.js"
 
 export function renderCumulativeChart(svg, cumulativeMonthly) {
   if (!svg) return;
@@ -35,7 +36,7 @@ export function renderCumulativeChart(svg, cumulativeMonthly) {
     const py = y(cumulativeMonthly[i].count);
     dLine += i === 0 ? `M ${px} ${py}` : ` L ${px} ${py}`;
   }
-  svg.appendChild(svgEl("path", { d: dLine, fill: "none", stroke: "rgba(35, 154, 59, 0.95)", "stroke-width": "2" }));
+  svg.appendChild(svgEl("path", { d: dLine, fill: "none", stroke: CONFIG.LINE_COLOR, "stroke-width": "2" }));
 
   // X labels
   const maxLabels = 8;

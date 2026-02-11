@@ -1,4 +1,4 @@
-import { renderMatrixHeatmap } from "./matrixHeatmap.js";
+import { renderMatrixHeatmap, computeSharedLabelWidth } from "./matrixHeatmap.js";
 
 function stripPrefix(s) {
   return String(s).replace(/^complexity:\s*/i, "").trim();
@@ -37,12 +37,21 @@ export function renderComplexityMonthHeatmap(
     displayMap.set(disp, complexityMonthly.get(original) || new Map());
   }
 
+  const computed = computeSharedLabelWidth({
+    lists: [displayLabels],
+    maxChars: 35,     // let long labels influence width
+    min: 160,
+    max: 560          // allow wider label column for complexities
+  });
+
+  const labelWForComplexities = Math.max(labelW || 0, computed);
+
   renderMatrixHeatmap({
     svg: svgEl,
     rowLabels: displayLabels,
     rowToMonthMap: displayMap,
     months,
-    labelW,
+    labelW: labelWForComplexities,
     valueTitlePrefix: "Complexity",
     formatMonthTick: (ym) => {
       const [yy, mm] = ym.split("-").map((x) => parseInt(x, 10));
