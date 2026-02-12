@@ -15,6 +15,9 @@ import { buildCategoryByMonth } from "./data/aggregations.js";
 import { renderCategoryMonthHeatmap } from "./charts/categoryMonthHeatmap.js";
 import { buildCumulativeSeriesFromMonthlyMap } from "./data/aggregations.js";
 import { renderCumulativeCategoryTotalsChart } from "./charts/cumulativeCategoryTotalsChart.js";
+import { buildCompletionRateMonthly } from "./data/aggregations.js";
+import { renderCompletionRateChart } from "./charts/completionRateChart.js";
+
 
 
 
@@ -31,6 +34,8 @@ const els = {
   cumulativeChart: qs("cumulativeChart"),
   cumulativeMetricsChart: qs("cumulativeMetricsChart"),
   cumulativeByPlayerChart: qs("cumulativeByPlayerChart"),
+  completionRateChart: qs("completionRateChart"),
+
 
   playerMonthHeatmap: qs("playerMonthHeatmap"),
   drillMonthHeatmap: qs("drillMonthHeatmap"),
@@ -49,7 +54,9 @@ const els = {
   drillHmTitle: qs("drillHmTitle"),
   complexityHmTitle: qs("complexityHmTitle"),
   categoryHmTitle: qs("categoryHmTitle"),
-  cumulativeCategoryTitle: qs("cumulativeCategoryTitle")
+  cumulativeCategoryTitle: qs("cumulativeCategoryTitle"),
+  completionRateTitle: qs("completionRateTitle")
+
 };
 
 let currentRows = [];
@@ -114,6 +121,18 @@ function refresh() {
 
   const { categoryMonthly, categories } =
   buildCategoryByMonth(currentRows, playerValue, months, start, end);
+
+  const completionRate = buildCompletionRateMonthly(currentRows, playerValue, months, start, end);
+
+  renderCompletionRateChart(
+    els.completionRateChart,
+    completionRate,
+    els.completionRateTitle,
+    playerValue === "ALL"
+      ? "% drills completed per month (All players)"
+      : `% drills completed per month (${playerValue})`
+  );
+
 
 
   // cumulative series per category

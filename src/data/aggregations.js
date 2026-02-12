@@ -275,3 +275,38 @@ export function buildCumulativeSeriesFromMonthlyMap(months, monthlyMapByKey) {
   return { series: out, maxY: globalMax };
 }
 
+// % completed per month (COMPLETED / total) within the current rolling window
+export function buildCompletionRateMonthly(rows, playerValue, months, start, end) {
+  const totals = new Map();     // month -> total sessions
+  const completed = new Map();  // month -> completed sessions
+
+  for (const r of rows) {
+    const d = new Date(r.session_start);
+    if (Number.isNaN(d.getTime())) continue;
+
+    const dateUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    if (dateUTC < start || dateUTC > end) continue;
+
+    const p = (r.player ?? "").toString();
+    if (playerValue !== "ALL" && p !== playerValue) continue;
+
+    const mk = `${dateUTC.getUTCFullYear()}-${String(dateUTC.getUTCMonth() + 1).padStart(2, "0")}`;
+
+    totals.set(mk, (totals.get(mk) || 0) + 1);
+
+    const status = (r.completion_status ?? "").toString().trim().toUpperCase();
+    if (status === "COMPLETED") {
+      completed.set(mk, (completed.get(mk) || 0) + 1);
+    }
+  }
+
+  // Return continuous months array aligned to `months`
+  return months.map(m => {
+    const t = totals.get(m) || 0;
+    const c = completed.get(m) || 0;
+    const pct = t === 0 ? 0 : (c / t) * 100;
+    return { month: m, pct, completed: c, total: t };
+  });
+}
+
+

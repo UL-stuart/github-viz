@@ -12,7 +12,7 @@ function rgbToHex({ r, g, b }) {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-// Simple gradient: light green -> dark green, with a light grey for zero.
+// Simple gradient: light blue -> dark blue, with a light grey for zero.
 function valueToColor(v, vmax) {
   if (v <= 0) return CONFIG.COLORS[0];
   const t = vmax <= 0 ? 0 : Math.min(1, v / vmax);
